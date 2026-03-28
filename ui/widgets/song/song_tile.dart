@@ -1,4 +1,3 @@
-import 'package:blabla/FIREBASE/data/dtos/song_dto.dart';
 import 'package:flutter/material.dart';
 
 import '../../../model/songs/song.dart';
@@ -30,6 +29,12 @@ class SongTile extends StatelessWidget {
             backgroundImage: NetworkImage(song.imageUrl.toString()),
           ),
           title: Text(song.title),
+          subtitle: song.artistName == null && song.artistGenre == null
+              ? null
+              : Text(
+                  '${song.artistName ?? 'Unknown artist'}'
+                  '${song.artistGenre == null ? '' : ' - ${song.artistGenre}'}',
+                ),
           trailing: Text(
             isPlaying ? "Playing" : "",
             style: TextStyle(color: Colors.amber),

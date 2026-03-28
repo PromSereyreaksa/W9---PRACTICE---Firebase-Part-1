@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import '../../../../data/repositories/artists/artist_repository.dart';
 import '../../../../data/repositories/songs/song_repository.dart';
+import '../../../../model/artists/artist.dart';
 import '../../../states/player_state.dart';
 import '../../../../model/songs/song.dart';
 import '../../../utils/async_value.dart';
 
 class LibraryViewModel extends ChangeNotifier {
+  final ArtistRepository artistRepository;
   final SongRepository songRepository;
   final PlayerState playerState;
 
   AsyncValue<List<Song>> songsValue = AsyncValue.loading();
 
-  LibraryViewModel({required this.songRepository, required this.playerState}) {
+  LibraryViewModel({
+    required this.artistRepository,
+    required this.songRepository,
+    required this.playerState,
+  }) {
     playerState.addListener(notifyListeners);
 
     // init
@@ -35,12 +42,13 @@ class LibraryViewModel extends ChangeNotifier {
     try {
       // 2- Fetch is successfull
       List<Song> songs = await songRepository.fetchSongs();
-      songsValue = AsyncValue.success(songs);
+      List<Song> joinedSongs = await _joinSongsWithArtists(songs);
+      songsValue = AsyncValue.success(joinedSongs);
     } catch (e) {
       // 3- Fetch is unsucessfull
       songsValue = AsyncValue.error(e);
     }
-     notifyListeners();
+    notifyListeners();
 
   }
 
@@ -48,4 +56,22 @@ class LibraryViewModel extends ChangeNotifier {
 
   void start(Song song) => playerState.start(song);
   void stop(Song song) => playerState.stop();
+
+  Future<List<Song>> _joinSongsWithArtists(List<Song> songs) async {
+    List<Artist> artists = await artistRepository.fetchArtists();
+    Map<String, Artist?> artistsById = {};
+
+    for (Artist artist in artists) {
+      artistsById[artist.id] = artist;
+    }
+
+    return songs.map((song) {
+      Artist? artist = artistsById[song.artistId];
+
+      return song.copyWith(
+        artistName: artist?.name,
+        artistGenre: artist?.genre,
+      );
+    }).toList();
+  }
 }
